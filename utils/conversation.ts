@@ -97,3 +97,19 @@ export async function completeConversation(conversationId: string) {
     }
   );
 }
+
+
+export async function returnToActiveStatus(conversationId: string) {
+  const db = await getDb();
+  const collection = db.collection<Conversation>('conversations');
+
+  await collection.updateOne(
+    { conversationId },
+    { 
+      $set: { 
+        status: RequestStatus.ACTIVE,
+        // activeHelpRequestId: null // Optionally clear active help request
+      } 
+    }
+  );
+}

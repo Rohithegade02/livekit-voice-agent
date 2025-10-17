@@ -14,7 +14,8 @@ import { SALON_SYSTEM_PROMPT } from './data/SALON_PROMPT.js';
 import { RequestStatus } from './interface.js';
 import { fileURLToPath } from 'node:url';
 import { checkForEscalation } from './utils/escalation.js';
-import { saveConversation, updateSessionStatus } from './utils/conversation.js';
+import { returnToActiveStatus, saveConversation, updateSessionStatus } from './utils/conversation.js';
+import { findAnswerInKnowledgeBase } from './utils/knowledgeService.js';
 
 dotenv.config({ path: '.env.local' });
 
@@ -46,6 +47,30 @@ export default defineAgent({
 
     console.log("✅ Session started with STT:", session.stt, "TTS:", session.tts);
 
+    ctx.room.on('dataReceived', (payload, participant, kind, topic) => {
+      if (topic === 'supervisor_response') {
+        try {
+          const textDecoder = new TextDecoder();
+          const data = JSON.parse(textDecoder.decode(payload));
+          
+          if (data.answer && data.conversationId === conversationId) {
+            console.log('🤖 Supervisor response received:', data.answer);
+            
+            // Send the supervisor's answer to user
+            session.say(data.answer);
+            
+            // Save to conversation
+            saveConversation(conversationId!, {
+              text: data.answer,
+              type: 'ai',
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch (error) {
+          console.error('Error handling supervisor response:', error);
+        }
+      }
+    });
     // Use room name as conversationId
     const conversationId = ctx.room.name;
 
@@ -56,40 +81,55 @@ export default defineAgent({
       timestamp: new Date().toISOString(),
     });
 
-    // Listen to user transcriptions
-    session.on(voice.AgentSessionEventTypes.UserInputTranscribed, async (ev) => {
-      if (!ev.transcript || !ev.isFinal) return;
-
-      // Save user message
-      await saveConversation(conversationId!, {
-        text: ev.transcript,
-        type: 'user',
-        timestamp: new Date().toISOString(),
-      });
-
-      // Check for escalation
-      const escalated = await checkForEscalation(ev.transcript, session, ctx);
-      if (escalated) {
-        await updateSessionStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
-      }
-    });
-
     // Listen to AI generated messages
-    session.on(voice.AgentSessionEventTypes.ConversationItemAdded, async (ev) => {
-      const { textContent, role, createdAt } = ev.item;
-      if (!textContent) return;
+   session.on(voice.AgentSessionEventTypes.UserInputTranscribed, async (ev) => {
+  if (!ev.transcript || !ev.isFinal) return;
 
-      await saveConversation(conversationId!, {
-        text: textContent,
-        type: role === 'user' ? 'user' : 'ai',
-        timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),
-      });
+  const userMessage = ev.transcript;
+
+  // Save user message
+  await saveConversation(conversationId!, {
+    text: userMessage,
+    type: 'user',
+    timestamp: new Date().toISOString(),
+  });
+
+  // 1. FIRST check knowledge base
+  const knowledgeAnswer = await findAnswerInKnowledgeBase(userMessage);
+  if (knowledgeAnswer) {
+    console.log('🎓 Using knowledge base answer for:', userMessage);
+    
+    // Send knowledge base answer
+    
+    await session.say(knowledgeAnswer);
+    
+    await returnToActiveStatus(conversationId!);
+
+    
+    // Save AI response
+    await saveConversation(conversationId!, {
+      text: knowledgeAnswer,
+      type: 'ai',
+      timestamp: new Date().toISOString(),
     });
+    
+    return; // Stop further processing
+  }
+
+  // 2. THEN check for escalation (only if no knowledge base answer)
+  const escalated = await checkForEscalation(userMessage, session, ctx);
+  if (escalated) {
+    await updateSessionStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+  }
+});
 
     // Initial AI greeting
     await session.generateReply({
       instructions: 'Greet the user and offer your assistance.',
     });
+
+
+
 
     ctx.room.on('disconnected', () => console.log('Room disconnected'));
 
