@@ -7,8 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "download-files": "tsc && node agent.js download-files",
     "dev": "tsx agent.ts dev",
+    "dev:supervisor": "tsx server.ts",
     "build": "tsc",
-    "start": "node agent.js start"
+    "start": "node agent.js start",
+    "start:supervisor": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -16,11 +18,14 @@
   "packageManager": "pnpm@10.15.1",
   "type": "module",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@google-cloud/firestore": "^7.11.6",
     "@livekit/agents": "~1.0.11",
     "@livekit/agents-plugin-livekit": "~1.0.11",
     "@livekit/agents-plugin-silero": "~1.0.11",

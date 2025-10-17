@@ -10,7 +10,7 @@ export async function createHelpRequest(conversationId: string, question: string
   const request: HelpRequest = {
     conversationId,
     question,
-    status: HelpRequestStatus.PENDING,  // Fixed: Use HelpRequestStatus
+    status: HelpRequestStatus.PENDING,
     createdAt: new Date().toISOString(),
   };
 
@@ -18,6 +18,7 @@ export async function createHelpRequest(conversationId: string, question: string
   console.log(`📩 Supervisor ping: Hey, I need help answering "${question}"`);
   return result.insertedId;
 }
+
 
 // Mark as resolved with supervisor response
 export async function resolveHelpRequest(id: string, response: string) {
