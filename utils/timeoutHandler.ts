@@ -1,5 +1,5 @@
 import { getDb } from '../config/db.js';
-import { HelpRequestStatus, RequestStatus } from '../interface.js';
+import { HelpRequestStatus, RequestStatus } from '../src/domain/entities/Enums.js';
 
 export async function handleExpiredHelpRequests() {
   try {

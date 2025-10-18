@@ -36,6 +36,14 @@ export class HelpRequestRepository implements IHelpRequestRepository {
     if (!doc) return null;
     return this.toHelpRequest(doc);
   }
+   async findExpiredRequests(timeoutAgo: Date): Promise<HelpRequest[]> {
+    return this.db.collection<HelpRequest>('help_requests')
+      .find({
+        status: HelpRequestStatus.PENDING,
+        createdAt: { $lt: timeoutAgo }
+      })
+      .toArray();
+  }
 
   async updateStatus(
     id: ObjectId,
@@ -45,14 +53,15 @@ export class HelpRequestRepository implements IHelpRequestRepository {
     const updateData: any = { status, resolvedAt: new Date() };
     if (response) updateData.supervisorResponse = response;
 
-    await this.db.collection("help_requests").updateOne(
+    await this.db.collection<HelpRequest>("help_requests").updateOne(
       { _id: id },
       { $set: updateData }
     );
   }
    async create(helpRequest: Omit<HelpRequest, '_id'>): Promise<HelpRequest> {
-    const result = await this.db.collection('help_requests').insertOne(helpRequest);
+    const result = await this.db.collection<HelpRequest>('help_requests').insertOne(helpRequest);
     console.log(`📩 Supervisor ping: Hey, I need help answering "${helpRequest.question}"`);
     return { ...helpRequest, _id: result.insertedId };
   }
+  
 }

@@ -14,6 +14,9 @@ import { ConversationService } from "./application/services/ConversationService.
 import { EscalateToSupervisorUseCase } from "./domain/use-cases/EscalateToSupervisorUseCase.js";
 import { EscalationService } from "./application/services/EscalationService.js";
 import { LiveKitEscalationHandler } from "./application/infrastructure/livekit/LiveKitEscalationHandler.js";
+import { HandleExpiredHelpRequestsUseCase } from "./domain/use-cases/HandleExpiredHelpRequestsUseCase.js";
+import { TimeoutService } from "./application/services/TimeoutService.js";
+import { TimeoutHandler } from "./infrastructure/background/TimeoutHandler.js";
 
 export function setupDependencies(db: Db) {
   // Repositories
@@ -37,6 +40,11 @@ export function setupDependencies(db: Db) {
     helpRequestRepo,
     conversationRepo
   );
+    const handleExpiredHelpRequestsUseCase = new HandleExpiredHelpRequestsUseCase(
+    helpRequestRepo,
+    conversationRepo
+  );
+
   
   // Application Services
   const helpRequestService = new HelpRequestService(
@@ -46,6 +54,7 @@ export function setupDependencies(db: Db) {
   const knowledgeService = new KnowledgeService(manageKnowledgeUseCase);
   const conversationService = new ConversationService(conversationRepo);
   const escalationService = new EscalationService(escalateToSupervisorUseCase);
+  const timeoutService = new TimeoutService(handleExpiredHelpRequestsUseCase);
 
   
   // Controllers
@@ -54,6 +63,7 @@ export function setupDependencies(db: Db) {
   
   // Infrastructure
   const liveKitEscalationHandler = new LiveKitEscalationHandler(escalationService);
+  const timeoutHandler = new TimeoutHandler(timeoutService);
 
 
   return {
@@ -62,6 +72,8 @@ export function setupDependencies(db: Db) {
     conversationService,
     liveKitEscalationHandler,
     escalationService,
-    knowledgeService
+    knowledgeService,
+    timeoutHandler,
+    timeoutService
   };
 }

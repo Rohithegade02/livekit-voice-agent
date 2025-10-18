@@ -36,7 +36,7 @@ export class KnowledgeRepository implements IKnowledgeRepository {
     for (const entry of entries) {
       if (this.isSimilarQuestion(question, entry.question)) {
         // Update usage stats
-        await this.db.collection('knowledge_entries').updateOne(
+        await this.db.collection<KnowledgeEntry>('knowledge_entries').updateOne(
           { _id: entry._id as unknown as ObjectId },
           { 
             $inc: { usageCount: 1 },
@@ -50,12 +50,12 @@ export class KnowledgeRepository implements IKnowledgeRepository {
   }
 
   async create(entry: Omit<KnowledgeEntry, "_id">): Promise<KnowledgeEntry> {
-    const result = await this.db.collection("knowledge_entries").insertOne(entry);
+    const result = await this.db.collection<KnowledgeEntry>("knowledge_entries").insertOne(entry);
     return { ...entry, _id: result.insertedId };
   }
 
   async updateUsage(id: ObjectId, answer: string): Promise<void> {
-    await this.db.collection("knowledge_entries").updateOne(
+    await this.db.collection<KnowledgeEntry>("knowledge_entries").updateOne(
       { _id: id },
       {
         $set: { answer, lastUsed: new Date() },
@@ -65,7 +65,7 @@ export class KnowledgeRepository implements IKnowledgeRepository {
   }
 
   async delete(id: ObjectId): Promise<void> {
-    await this.db.collection("knowledge_entries").deleteOne({ _id: id });
+    await this.db.collection<KnowledgeEntry>("knowledge_entries").deleteOne({ _id: id });
   }
   private isSimilarQuestion(q1: string, q2: string): boolean {
     const words1 = q1.toLowerCase().split(/\s+/).filter(w => w.length > 2);

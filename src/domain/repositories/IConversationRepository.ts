@@ -11,4 +11,5 @@ export interface IConversationRepository {
   findByStatus(status: RequestStatus): Promise<Conversation[]>;
   completeConversation(conversationId: ObjectId): Promise<void>;
   returnToActiveStatus(conversationId: ObjectId): Promise<void>;
+  activateConversation(helpRequestId: ObjectId): Promise<void>;
 }

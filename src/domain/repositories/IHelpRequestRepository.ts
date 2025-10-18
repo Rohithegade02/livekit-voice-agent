@@ -7,4 +7,5 @@ export interface IHelpRequestRepository {
   findById(id: ObjectId): Promise<HelpRequest | null>;
   updateStatus(id: ObjectId, status: HelpRequestStatus, response?: string): Promise<void>;
   create(helpRequest: Omit<HelpRequest, '_id'>): Promise<HelpRequest>;
+  findExpiredRequests(timeoutAgo: Date): Promise<HelpRequest[]>; 
 }
