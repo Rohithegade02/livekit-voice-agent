@@ -2,18 +2,8 @@ import type { JobContext, voice } from "@livekit/agents";
 import { RequestStatus, HelpRequestStatus } from "../interface.js";
 import { updateSessionStatus } from "./conversation.js";
 import { createHelpRequest } from "./helpRequests.js";
+import { unknownTopics } from "../data/UNKNOWN_TOPIC.js";
 
-// List of topics that should trigger escalation
-const unknownTopics = [
-  "manager",
-  "supervisor",
-  "complaint",
-  "refund",
-  "refunds", 
-  "specific stylist",
-  "employee",
-  "schedule",
-];
 
 export async function checkForEscalation(
   text: string,

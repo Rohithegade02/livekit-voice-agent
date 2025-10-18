@@ -1,7 +1,10 @@
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
-const uri = 'mongodb+srv://rohithegade8_db_user:EoM39XoH3B8Vf0qb@cluster0.gv6dq8a.mongodb.net/';
-const dbName = 'livekit_voice_agent';
+const uri = process.env.MONGODB_URI!;
+const dbName = process.env.MONGODB_DB_NAME!;
+
 
 let clientPromise: Promise<MongoClient> | null = null;
 
