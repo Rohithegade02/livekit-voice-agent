@@ -56,8 +56,9 @@ export default defineAgent({
           if (data.answer && data.conversationId === conversationId) {
             console.log('🤖 Supervisor response received:', data.answer);
             
+          const responseText=`The supervisor provided an answer to your question. You asked: "${data.question}". The answer is: "${data.answer}".`
             // Send the supervisor's answer to user
-            session.say(data.answer);
+          session.say(responseText);
             
             // Save to conversation
             saveConversation(conversationId!, {
@@ -65,6 +66,7 @@ export default defineAgent({
               type: 'ai',
               timestamp: new Date().toISOString(),
             });
+            updateSessionStatus(conversationId!, RequestStatus.ACTIVE);
           }
         } catch (error) {
           console.error('Error handling supervisor response:', error);
@@ -100,26 +102,27 @@ export default defineAgent({
     console.log('🎓 Using knowledge base answer for:', userMessage);
     
     // Send knowledge base answer
-    
-    await session.say(knowledgeAnswer);
-    
+const responseText= `The knowledge base provided an answer to your question. You asked: "${userMessage}". The answer is: "${knowledgeAnswer}".`
+    await session.say(responseText);
+
     await returnToActiveStatus(conversationId!);
 
     
     // Save AI response
     await saveConversation(conversationId!, {
-      text: knowledgeAnswer,
+      text: responseText,
       type: 'ai',
       timestamp: new Date().toISOString(),
     });
     
     return; // Stop further processing
-  }
+  }else {
 
-  // 2. THEN check for escalation (only if no knowledge base answer)
-  const escalated = await checkForEscalation(userMessage, session, ctx);
-  if (escalated) {
-    await updateSessionStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+    // 2. THEN check for escalation (only if no knowledge base answer)
+    const escalated = await checkForEscalation(userMessage, session, ctx);
+    if (escalated) {
+      await updateSessionStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+    }
   }
 });
 
