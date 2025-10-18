@@ -12,5 +12,5 @@ export interface Conversation {
   startedAt: string;
   endedAt?: string;
   messages: ConversationEntry[];
-  activeHelpRequestId?: ObjectId;
+  activeHelpRequestId?: ObjectId | string;
 }

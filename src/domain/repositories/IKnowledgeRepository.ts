@@ -5,6 +5,6 @@ export interface IKnowledgeRepository {
   findAll(): Promise<KnowledgeEntry[]>;
   findByQuestion(question: string): Promise<KnowledgeEntry | null>;
   create(entry: Omit<KnowledgeEntry, '_id'>): Promise<KnowledgeEntry>;
-  updateUsage(id: ObjectId, answer: string): Promise<void>;
-  delete(id: ObjectId): Promise<void>;
+  updateUsage(id: string, answer: string): Promise<void>;
+  delete(id: string): Promise<void>;
 }

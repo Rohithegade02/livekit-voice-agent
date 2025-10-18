@@ -13,7 +13,7 @@ export class HelpRequestService {
     return this.getPendingRequestsUseCase.execute();
   }
 
-  async resolveRequest(helpRequestId: ObjectId, response: string): Promise<void> {
+  async resolveRequest(helpRequestId: string, response: string): Promise<void> {
     await this.resolveHelpRequestUseCase.execute(helpRequestId, response);
   }
 }

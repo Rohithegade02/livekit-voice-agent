@@ -9,10 +9,10 @@ export class EscalateToSupervisorUseCase {
     private conversationRepository: IConversationRepository
   ) {}
 
-  async execute(conversationId: ObjectId, question: string): Promise<ObjectId> {
+  async execute(conversationId: string, question: string): Promise<string> {
     // 1. Create help request
     const helpRequest = await this.helpRequestRepository.create({
-      conversationId: conversationId as unknown as string,
+      conversationId,
       question,
       status: HelpRequestStatus.PENDING,
       createdAt: new Date()
@@ -21,9 +21,9 @@ export class EscalateToSupervisorUseCase {
     // 2. Update conversation status
     await this.conversationRepository.setActiveHelpRequest(
       conversationId, 
-      helpRequest._id! as unknown as ObjectId
+      helpRequest._id!
     );
 
-    return helpRequest._id! as unknown as ObjectId;
+    return helpRequest._id!;
   }
 }

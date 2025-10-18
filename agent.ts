@@ -59,10 +59,10 @@ export default defineAgent({
     } = dependencies;
 
     // Use room name as conversationId
-    const conversationId : ObjectId = new ObjectId(ctx.room.name) ;
+    const conversationId  = ctx.room.name ;
 
     // Initial AI greeting saved as first message
-    await conversationService.saveMessage(conversationId!, {
+    await conversationService.saveMessage(conversationId as unknown as ObjectId, {
       text: "Session started. Ready to assist the user.",
       type: ConversationEntryType.AI,
       timestamp: new Date().toISOString(),
@@ -84,14 +84,14 @@ export default defineAgent({
             await session.say(responseText);
             
             // Save to conversation
-            await conversationService.saveMessage(conversationId!, {
+            await conversationService.saveMessage(conversationId as unknown as ObjectId, {
               text: data.answer,
               type: ConversationEntryType.AI,
               timestamp: new Date().toISOString(),
             });
             
             // Update conversation status
-            await conversationService.returnToActiveStatus(conversationId!);
+            await conversationService.returnToActiveStatus(conversationId as unknown as ObjectId);
           }
         } catch (error) {
           console.error('Error handling supervisor response:', error);
@@ -106,7 +106,7 @@ export default defineAgent({
       const userMessage = ev.transcript;
 
       // Save user message
-      await conversationService.saveMessage(conversationId!, {
+      await conversationService.saveMessage(conversationId as unknown as ObjectId, {
         text: userMessage,
         type: ConversationEntryType.USER,
         timestamp: new Date().toISOString(),
@@ -123,10 +123,10 @@ export default defineAgent({
         await session.say(responseText);
 
         // Update conversation status
-        await conversationService.returnToActiveStatus(conversationId!);
+        await conversationService.returnToActiveStatus(conversationId as unknown as ObjectId);
         
         // Save AI response
-        await conversationService.saveMessage(conversationId!, {
+        await conversationService.saveMessage(conversationId as unknown as ObjectId, {
           text: responseText,
           type: ConversationEntryType.AI,
           timestamp: new Date().toISOString(),
@@ -144,7 +144,7 @@ export default defineAgent({
       );
       
       if (escalated) {
-        await conversationService.updateStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+        await conversationService.updateStatus(conversationId as unknown as ObjectId, RequestStatus.WAITING_FOR_HELP);
       }
     });
 
@@ -153,7 +153,7 @@ export default defineAgent({
       const { textContent, role, createdAt } = ev.item;
       if (!textContent) return;
 
-      await conversationService.saveMessage(conversationId!, {
+      await conversationService.saveMessage(conversationId as unknown as ObjectId, {
         text: textContent,
         type: role === 'user' ? ConversationEntryType.USER : ConversationEntryType.AI,
         timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),

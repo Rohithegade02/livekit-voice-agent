@@ -1,10 +1,10 @@
 import type { ObjectId } from "mongodb";
 
 export interface KnowledgeEntry {
-  _id?: ObjectId;
+  _id?: string;
   question: string;
   answer: string;
-  sourceHelpRequestId: ObjectId;
+  sourceHelpRequestId: string;
   createdAt: Date;
   usageCount: number;
   lastUsed?: Date;

@@ -13,7 +13,7 @@ export class ResolveHelpRequestUseCase {
     private notificationService: INotificationService
   ) {}
 
-  async execute(helpRequestId: ObjectId, response: string): Promise<void> {
+  async execute(helpRequestId: string, response: string): Promise<void> {
     // Update help request
     await this.helpRequestRepo.updateStatus(helpRequestId, HelpRequestStatus.RESOLVED, response);
     

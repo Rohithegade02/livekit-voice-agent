@@ -2,7 +2,7 @@ import type { ObjectId } from "mongodb";
 import type { HelpRequestStatus } from "./Enums.js";
 
 export interface HelpRequest {
-  _id?: ObjectId;
+  _id?: string;
   conversationId: string;
   question: string;
   createdAt: Date;

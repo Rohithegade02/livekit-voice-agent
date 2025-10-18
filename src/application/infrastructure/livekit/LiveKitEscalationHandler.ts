@@ -36,7 +36,7 @@ export class LiveKitEscalationHandler {
     return false;
   }
 
-  private async sendEscalationData(ctx: JobContext, text: string, helpRequestId: ObjectId): Promise<void> {
+  private async sendEscalationData(ctx: JobContext, text: string, helpRequestId: string): Promise<void> {
     if (ctx.room) {
       try {
         await ctx.room.localParticipant?.publishData(

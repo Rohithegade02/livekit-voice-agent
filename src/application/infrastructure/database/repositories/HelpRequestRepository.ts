@@ -28,10 +28,10 @@ export class HelpRequestRepository implements IHelpRequestRepository {
     return docs.map(this.toHelpRequest);
   }
 
-  async findById(id: ObjectId): Promise<HelpRequest | null> {
+  async findById(id: string): Promise<HelpRequest | null> {
     const doc = await this.db
       .collection("help_requests")
-      .findOne({ _id: id });
+      .findOne({ _id: new ObjectId(id)  });
 
     if (!doc) return null;
     return this.toHelpRequest(doc);
@@ -46,7 +46,7 @@ export class HelpRequestRepository implements IHelpRequestRepository {
   }
 
   async updateStatus(
-    id: ObjectId,
+    id: string,
     status: HelpRequestStatus,
     response?: string
   ): Promise<void> {

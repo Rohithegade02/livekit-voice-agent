@@ -1,4 +1,3 @@
-import type { ObjectId } from "mongodb";
 import type { KnowledgeEntry } from "../../domain/entities/KnowledgeEntry.js";
 import type { ManageKnowledgeUseCase } from "../../domain/use-cases/ManageKnowledgeUseCase.js";
 
@@ -9,7 +8,7 @@ export  class KnowledgeService {
     return this.manageKnowledgeUseCase.getKnowledgeEntries();
   }
 
-  async deleteEntry(id: ObjectId): Promise<void> {
+  async deleteEntry(id: string): Promise<void> {
     await this.manageKnowledgeUseCase.deleteKnowledgeEntry(id);
   }
 

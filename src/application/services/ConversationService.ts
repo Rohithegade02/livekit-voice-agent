@@ -6,27 +6,27 @@ import { RequestStatus } from "../../domain/entities/Enums.js";
 export class ConversationService {
   constructor(private conversationRepository: IConversationRepository) {}
 
-  async saveMessage(conversationId: ObjectId, entry: ConversationEntry): Promise<void> {
+  async saveMessage(conversationId: string, entry: ConversationEntry): Promise<void> {
     await this.conversationRepository.saveMessage(conversationId, entry);
   }
 
-  async updateStatus(conversationId: ObjectId, newStatus: RequestStatus): Promise<void> {
+  async updateStatus(conversationId: string, newStatus: RequestStatus): Promise<void> {
     await this.conversationRepository.updateStatus(conversationId, newStatus);
   }
 
-  async setActiveHelpRequest(conversationId: ObjectId, helpRequestId: ObjectId): Promise<void> {
+  async setActiveHelpRequest(conversationId: string, helpRequestId: string): Promise<void> {
     await this.conversationRepository.setActiveHelpRequest(conversationId, helpRequestId);
   }
 
-  async getConversation(conversationId: ObjectId) {
+  async getConversation(conversationId: string) {
     return this.conversationRepository.findById(conversationId);
   }
 
-  async completeConversation(conversationId: ObjectId): Promise<void> {
+  async completeConversation(conversationId: string): Promise<void> {
     await this.conversationRepository.completeConversation(conversationId);
   }
 
-  async returnToActiveStatus(conversationId: ObjectId): Promise<void> {
+  async returnToActiveStatus(conversationId: string): Promise<void> {
     await this.conversationRepository.returnToActiveStatus(conversationId);
   }
 }
