@@ -6,7 +6,7 @@ export class EscalationService {
     private escalateToSupervisorUseCase: EscalateToSupervisorUseCase
   ) {}
 
-  async handleEscalation(conversationId: string, userMessage: string): Promise<ObjectId> {
+  async handleEscalation(conversationId: ObjectId, userMessage: string): Promise<ObjectId> {
     return this.escalateToSupervisorUseCase.execute(conversationId, userMessage);
   }
 

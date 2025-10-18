@@ -28,17 +28,17 @@ export class HelpRequestRepository implements IHelpRequestRepository {
     return docs.map(this.toHelpRequest);
   }
 
-  async findById(id: string): Promise<HelpRequest | null> {
+  async findById(id: ObjectId): Promise<HelpRequest | null> {
     const doc = await this.db
       .collection("help_requests")
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({ _id: id });
 
     if (!doc) return null;
     return this.toHelpRequest(doc);
   }
 
   async updateStatus(
-    id: string,
+    id: ObjectId,
     status: HelpRequestStatus,
     response?: string
   ): Promise<void> {
@@ -46,13 +46,13 @@ export class HelpRequestRepository implements IHelpRequestRepository {
     if (response) updateData.supervisorResponse = response;
 
     await this.db.collection("help_requests").updateOne(
-      { _id: new ObjectId(id) },
+      { _id: id },
       { $set: updateData }
     );
   }
    async create(helpRequest: Omit<HelpRequest, '_id'>): Promise<HelpRequest> {
     const result = await this.db.collection('help_requests').insertOne(helpRequest);
     console.log(`📩 Supervisor ping: Hey, I need help answering "${helpRequest.question}"`);
-    return { ...helpRequest, _id: result.insertedId.toString() };
+    return { ...helpRequest, _id: result.insertedId };
   }
 }

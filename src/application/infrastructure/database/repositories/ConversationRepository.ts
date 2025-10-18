@@ -12,9 +12,9 @@ export class ConversationRepository implements IConversationRepository {
     return this.db.collection<Conversation>('conversations');
   }
 
-  async saveMessage(conversationId: string, entry: ConversationEntry): Promise<void> {
+  async saveMessage(conversationId: ObjectId, entry: ConversationEntry): Promise<void> {
     const activeSession = await this.collection.findOne({
-      conversationId,
+      conversationId: conversationId as unknown as string,
       status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] },
     });
 
@@ -25,8 +25,8 @@ export class ConversationRepository implements IConversationRepository {
       );
     } else {
       await this.collection.insertOne({
-        conversationId,
-        roomName: conversationId,
+        conversationId: conversationId as unknown as string,
+        roomName: conversationId as unknown as string,
         status: RequestStatus.ACTIVE,
         startedAt: new Date().toISOString(),
         messages: [entry],
@@ -34,7 +34,7 @@ export class ConversationRepository implements IConversationRepository {
     }
   }
 
-  async updateStatus(conversationId: string, newStatus: RequestStatus): Promise<void> {
+  async updateStatus(conversationId: ObjectId, newStatus: RequestStatus): Promise<void> {
     const updateData: any = { status: newStatus };
     
     if (newStatus === RequestStatus.COMPLETED) {
@@ -42,14 +42,14 @@ export class ConversationRepository implements IConversationRepository {
     }
 
     await this.collection.updateOne(
-      { conversationId, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
+      { conversationId: conversationId as unknown as string, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
       { $set: updateData }
     );
   }
 
-  async setActiveHelpRequest(conversationId: string, helpRequestId: ObjectId): Promise<void> {
+  async setActiveHelpRequest(conversationId: ObjectId, helpRequestId: ObjectId): Promise<void> {
     await this.collection.updateOne(
-      { conversationId, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
+      { conversationId: conversationId as unknown as string, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
       { 
         $set: { 
           status: RequestStatus.WAITING_FOR_HELP,
@@ -59,9 +59,9 @@ export class ConversationRepository implements IConversationRepository {
     );
   }
 
-  async findById(conversationId: string): Promise<Conversation | null> {
+  async findById(conversationId: ObjectId): Promise<Conversation | null> {
     return this.collection.findOne({
-      conversationId,
+      conversationId : conversationId as unknown as string,
       status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] },
     });
   }
@@ -70,9 +70,9 @@ export class ConversationRepository implements IConversationRepository {
     return this.collection.find({ status }).sort({ startedAt: -1 }).toArray();
   }
 
-  async completeConversation(conversationId: string): Promise<void> {
+  async completeConversation(conversationId: ObjectId): Promise<void> {
     await this.collection.updateOne(
-      { conversationId, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
+      { conversationId: conversationId as unknown as string, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
       { 
         $set: { 
           status: RequestStatus.COMPLETED,
@@ -82,9 +82,9 @@ export class ConversationRepository implements IConversationRepository {
     );
   }
 
-  async returnToActiveStatus(conversationId: string): Promise<void> {
+  async returnToActiveStatus(conversationId: ObjectId): Promise<void> {
     await this.collection.updateOne(
-      { conversationId },
+      { conversationId: conversationId as unknown as string },
       { 
         $set: { 
           status: RequestStatus.ACTIVE,
@@ -94,9 +94,9 @@ export class ConversationRepository implements IConversationRepository {
     );
   }
 
-  async activateConversation(helpRequestId: string): Promise<void> {
+  async activateConversation(helpRequestId: ObjectId): Promise<void> {
     await this.collection.updateOne(
-      { activeHelpRequestId: new ObjectId(helpRequestId) },
+      { activeHelpRequestId: helpRequestId },
       { 
         $set: { 
           status: RequestStatus.ACTIVE,

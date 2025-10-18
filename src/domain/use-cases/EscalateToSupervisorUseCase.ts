@@ -9,10 +9,10 @@ export class EscalateToSupervisorUseCase {
     private conversationRepository: IConversationRepository
   ) {}
 
-  async execute(conversationId: string, question: string): Promise<ObjectId> {
+  async execute(conversationId: ObjectId, question: string): Promise<ObjectId> {
     // 1. Create help request
     const helpRequest = await this.helpRequestRepository.create({
-      conversationId,
+      conversationId: conversationId as unknown as string,
       question,
       status: HelpRequestStatus.PENDING,
       createdAt: new Date()

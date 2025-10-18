@@ -51,12 +51,12 @@ export class KnowledgeRepository implements IKnowledgeRepository {
 
   async create(entry: Omit<KnowledgeEntry, "_id">): Promise<KnowledgeEntry> {
     const result = await this.db.collection("knowledge_entries").insertOne(entry);
-    return { ...entry, _id: result.insertedId.toString() };
+    return { ...entry, _id: result.insertedId };
   }
 
-  async updateUsage(id: string, answer: string): Promise<void> {
+  async updateUsage(id: ObjectId, answer: string): Promise<void> {
     await this.db.collection("knowledge_entries").updateOne(
-      { _id: new ObjectId(id) },
+      { _id: id },
       {
         $set: { answer, lastUsed: new Date() },
         $inc: { usageCount: 1 },
@@ -64,8 +64,8 @@ export class KnowledgeRepository implements IKnowledgeRepository {
     );
   }
 
-  async delete(id: string): Promise<void> {
-    await this.db.collection("knowledge_entries").deleteOne({ _id: new ObjectId(id) });
+  async delete(id: ObjectId): Promise<void> {
+    await this.db.collection("knowledge_entries").deleteOne({ _id: id });
   }
   private isSimilarQuestion(q1: string, q2: string): boolean {
     const words1 = q1.toLowerCase().split(/\s+/).filter(w => w.length > 2);

@@ -16,6 +16,7 @@ import { unknownTopics } from './data/UNKNOWN_TOPIC.js';
 import { getDb } from './config/db.js';
 import { setupDependencies } from './src/di-container.js';
 import { ConversationEntryType, RequestStatus } from './src/domain/entities/Enums.js';
+import { ObjectId } from 'mongodb';
 
 
 dotenv.config({ path: '.env.local' });
@@ -58,7 +59,7 @@ export default defineAgent({
     } = dependencies;
 
     // Use room name as conversationId
-    const conversationId = ctx.room.name;
+    const conversationId : ObjectId = new ObjectId(ctx.room.name) ;
 
     // Initial AI greeting saved as first message
     await conversationService.saveMessage(conversationId!, {

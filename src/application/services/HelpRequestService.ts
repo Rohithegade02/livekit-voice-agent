@@ -1,3 +1,4 @@
+import type { ObjectId } from "mongodb";
 import type { HelpRequest } from "../../domain/entities/HelpRequest.js";
 import type { GetPendingHelpRequestsUseCase } from "../../domain/use-cases/GetPendingHelpRequestsUseCase.js";
 import type { ResolveHelpRequestUseCase } from "../../domain/use-cases/ResolveHelpRequestUseCase.js";
@@ -12,7 +13,7 @@ export class HelpRequestService {
     return this.getPendingRequestsUseCase.execute();
   }
 
-  async resolveRequest(helpRequestId: string, response: string): Promise<void> {
+  async resolveRequest(helpRequestId: ObjectId, response: string): Promise<void> {
     await this.resolveHelpRequestUseCase.execute(helpRequestId, response);
   }
 }
