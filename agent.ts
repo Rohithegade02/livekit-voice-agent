@@ -11,11 +11,12 @@ import * as silero from '@livekit/agents-plugin-silero';
 import { BackgroundVoiceCancellation } from '@livekit/noise-cancellation-node';
 import dotenv from 'dotenv';
 import { SALON_SYSTEM_PROMPT } from './data/SALON_PROMPT.js';
-import { RequestStatus } from './interface.js';
 import { fileURLToPath } from 'node:url';
-import { checkForEscalation } from './utils/escalation.js';
-import { returnToActiveStatus, saveConversation, updateSessionStatus } from './utils/conversation.js';
-import { findAnswerInKnowledgeBase } from './utils/knowledgeService.js';
+import { unknownTopics } from './data/UNKNOWN_TOPIC.js';
+import { getDb } from './config/db.js';
+import { setupDependencies } from './src/di-container.js';
+import { ConversationEntryType, RequestStatus } from './src/domain/entities/Enums.js';
+
 
 dotenv.config({ path: '.env.local' });
 
@@ -47,7 +48,27 @@ export default defineAgent({
 
     console.log("✅ Session started with STT:", session.stt, "TTS:", session.tts);
 
-    ctx.room.on('dataReceived', (payload, participant, kind, topic) => {
+    // Initialize dependencies
+    const db = await getDb();
+    const dependencies = setupDependencies(db);
+    const { 
+      conversationService, 
+      knowledgeService, 
+      liveKitEscalationHandler 
+    } = dependencies;
+
+    // Use room name as conversationId
+    const conversationId = ctx.room.name;
+
+    // Initial AI greeting saved as first message
+    await conversationService.saveMessage(conversationId!, {
+      text: "Session started. Ready to assist the user.",
+      type: ConversationEntryType.AI,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Listen for supervisor responses
+    ctx.room.on('dataReceived', async (payload, participant, kind, topic) => {
       if (topic === 'supervisor_response') {
         try {
           const textDecoder = new TextDecoder();
@@ -56,86 +77,94 @@ export default defineAgent({
           if (data.answer && data.conversationId === conversationId) {
             console.log('🤖 Supervisor response received:', data.answer);
             
-          const responseText=`The supervisor provided an answer to your question. You asked: "${data.question}". The answer is: "${data.answer}".`
+            const responseText = `The supervisor provided an answer to your question. You asked: "${data.question}". The answer is: "${data.answer}".`;
+            
             // Send the supervisor's answer to user
-          session.say(responseText);
+            await session.say(responseText);
             
             // Save to conversation
-            saveConversation(conversationId!, {
+            await conversationService.saveMessage(conversationId!, {
               text: data.answer,
-              type: 'ai',
+              type: ConversationEntryType.AI,
               timestamp: new Date().toISOString(),
             });
-            updateSessionStatus(conversationId!, RequestStatus.ACTIVE);
+            
+            // Update conversation status
+            await conversationService.returnToActiveStatus(conversationId!);
           }
         } catch (error) {
           console.error('Error handling supervisor response:', error);
         }
       }
     });
-    // Use room name as conversationId
-    const conversationId = ctx.room.name;
 
-    // Initial AI greeting saved as first message
-    await saveConversation(conversationId!, {
-      text: "Session started. Ready to assist the user.",
-      type: 'ai',
-      timestamp: new Date().toISOString(),
+    // Listen to user transcriptions
+    session.on(voice.AgentSessionEventTypes.UserInputTranscribed, async (ev) => {
+      if (!ev.transcript || !ev.isFinal) return;
+
+      const userMessage = ev.transcript;
+
+      // Save user message
+      await conversationService.saveMessage(conversationId!, {
+        text: userMessage,
+        type: ConversationEntryType.USER,
+        timestamp: new Date().toISOString(),
+      });
+
+      // 1. FIRST check knowledge base
+      const knowledgeAnswer = await knowledgeService.findAnswer(userMessage);
+      if (knowledgeAnswer) {
+        console.log('🎓 Using knowledge base answer for:', userMessage);
+        
+        const responseText = `The knowledge base provided an answer to your question. You asked: "${userMessage}". The answer is: "${knowledgeAnswer}".`;
+        
+        // Send knowledge base answer
+        await session.say(responseText);
+
+        // Update conversation status
+        await conversationService.returnToActiveStatus(conversationId!);
+        
+        // Save AI response
+        await conversationService.saveMessage(conversationId!, {
+          text: responseText,
+          type: ConversationEntryType.AI,
+          timestamp: new Date().toISOString(),
+        });
+        
+        return; // Stop further processing
+      }
+
+      // 2. THEN check for escalation (only if no knowledge base answer)
+      const escalated = await liveKitEscalationHandler.checkForEscalation(
+        userMessage, 
+        session, 
+        ctx, 
+        unknownTopics
+      );
+      
+      if (escalated) {
+        await conversationService.updateStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+      }
     });
 
-    // Listen to AI generated messages
-   session.on(voice.AgentSessionEventTypes.UserInputTranscribed, async (ev) => {
-  if (!ev.transcript || !ev.isFinal) return;
+    // Listen to AI generated messages and save them
+    session.on(voice.AgentSessionEventTypes.ConversationItemAdded, async (ev) => {
+      const { textContent, role, createdAt } = ev.item;
+      if (!textContent) return;
 
-  const userMessage = ev.transcript;
-
-  // Save user message
-  await saveConversation(conversationId!, {
-    text: userMessage,
-    type: 'user',
-    timestamp: new Date().toISOString(),
-  });
-
-  // 1. FIRST check knowledge base
-  const knowledgeAnswer = await findAnswerInKnowledgeBase(userMessage);
-  if (knowledgeAnswer) {
-    console.log('🎓 Using knowledge base answer for:', userMessage);
-    
-    // Send knowledge base answer
-const responseText= `The knowledge base provided an answer to your question. You asked: "${userMessage}". The answer is: "${knowledgeAnswer}".`
-    await session.say(responseText);
-
-    await returnToActiveStatus(conversationId!);
-
-    
-    // Save AI response
-    await saveConversation(conversationId!, {
-      text: responseText,
-      type: 'ai',
-      timestamp: new Date().toISOString(),
+      await conversationService.saveMessage(conversationId!, {
+        text: textContent,
+        type: role === 'user' ? ConversationEntryType.USER : ConversationEntryType.AI,
+        timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),
+      });
     });
-    
-    return; // Stop further processing
-  }else {
-
-    // 2. THEN check for escalation (only if no knowledge base answer)
-    const escalated = await checkForEscalation(userMessage, session, ctx);
-    if (escalated) {
-      await updateSessionStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
-    }
-  }
-});
 
     // Initial AI greeting
     await session.generateReply({
       instructions: 'Greet the user and offer your assistance.',
     });
 
-
-
-
     ctx.room.on('disconnected', () => console.log('Room disconnected'));
-
   },
 });
 
