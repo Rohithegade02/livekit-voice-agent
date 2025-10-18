@@ -7,10 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "download-files": "tsc && node agent.js download-files",
     "dev": "tsx agent.ts dev",
-    "dev:supervisor": "tsx server.ts",
+    "dev:supervisor": "tsx src/server.ts",
     "build": "tsc",
     "start": "node agent.js start",
-    "start:supervisor": "node server.js"
+    "start:supervisor": "node src/server.js"
   },
   "keywords": [],
   "author": "",
