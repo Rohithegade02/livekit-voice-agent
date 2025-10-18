@@ -3,12 +3,15 @@ import cors from 'cors';
 import { getDb } from './config/db.js';
 import { ObjectId } from 'mongodb';
 import { HelpRequestStatus,type KnowledgeEntry } from './interface.js';
+import { DataPacket_Kind, RoomServiceClient } from 'livekit-server-sdk';
+import dotenv from 'dotenv';
 
+dotenv.config({ path: '.env.local' });
 const app = express();
 const PORT = process.env.SUPERVISOR_PORT || 3001;
 
 app.use(cors({
-  origin: 'http://localhost:3000', // Your frontend URL
+  origin: 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
@@ -34,6 +37,7 @@ app.post('/api/help-requests/resolve', async (req : express.Request, res: expres
   try {
     const { helpRequestId, response } = req.body;
 
+    console.log("Resolving")
     if (!helpRequestId || !response) {
       return res.status(400).json({ error: 'Missing helpRequestId or response' });
     }
@@ -71,6 +75,7 @@ app.post('/api/help-requests/resolve', async (req : express.Request, res: expres
           }
         );
       } else {
+        console.log('🎓 Adding new knowledge base entry for:', helpRequest.question);
         // Create new entry
         const knowledgeEntry: KnowledgeEntry = {
           question: helpRequest.question,
@@ -82,11 +87,13 @@ app.post('/api/help-requests/resolve', async (req : express.Request, res: expres
         
         const result = await db.collection('knowledge_entries').insertOne(knowledgeEntry);
         
-        // 3. Link knowledge entry to help request
         await db.collection('help_requests').updateOne(
           { _id: objectId },
           { $set: { knowledgeBaseEntryId: result.insertedId } }
         );
+
+        // 3. Send notification to LiveKit room using REST API
+      await sendSupervisorResponse(helpRequest.conversationId, response);
       }
     }
 
@@ -142,6 +149,45 @@ app.delete('/api/knowledge/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete knowledge entry' });
   }
 });
+
+
+async function sendSupervisorResponse(roomName: string, answer: string) {
+  try {
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
+    const livekitUrl = process.env.LIVEKIT_URL;
+
+    if (!apiKey || !apiSecret || !livekitUrl) {
+      console.error('❌ Missing LiveKit credentials. Cannot send supervisor response.');
+      return;
+    }
+
+    // Create RoomServiceClient
+    const roomService = new RoomServiceClient(livekitUrl, apiKey, apiSecret);
+
+    // Convert string to Uint8Array
+    const data = new TextEncoder().encode(JSON.stringify({
+      type: 'supervisor_response',
+      answer: answer,
+      conversationId: roomName,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Send data to the room - Use the correct method signature
+    await roomService.sendData(
+      roomName,                    // room name
+      data,                       // data as Uint8Array
+      DataPacket_Kind.RELIABLE,   // delivery kind
+      {
+        topic: 'supervisor_response'
+      }
+    );
+
+    console.log(`✅ Supervisor response sent to room ${roomName}: ${answer}`);
+  } catch (error) {
+    console.error('❌ Error sending supervisor response via LiveKit:', error);
+  }
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Supervisor API server running on port ${PORT}`);
