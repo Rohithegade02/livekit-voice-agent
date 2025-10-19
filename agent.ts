@@ -62,7 +62,7 @@ export default defineAgent({
     const conversationId  = ctx.room.name ;
 
     // Initial AI greeting saved as first message
-    await conversationService.saveMessage(conversationId as unknown as ObjectId, {
+    await conversationService.saveMessage(conversationId!, {
       text: "Session started. Ready to assist the user.",
       type: ConversationEntryType.AI,
       timestamp: new Date().toISOString(),
@@ -78,20 +78,22 @@ export default defineAgent({
           if (data.answer && data.conversationId === conversationId) {
             console.log('🤖 Supervisor response received:', data.answer);
             
-            const responseText = `The supervisor provided an answer to your question. You asked: "${data.question}". The answer is: "${data.answer}".`;
+            console.log('🎓 Using supervisor answer for:', data);
+            const responseText = `The supervisor provided an answer to your question.  The answer is: "${data.answer}".`;
             
             // Send the supervisor's answer to user
             await session.say(responseText);
             
             // Save to conversation
-            await conversationService.saveMessage(conversationId as unknown as ObjectId, {
+            await conversationService.saveMessage(conversationId!, {
               text: data.answer,
               type: ConversationEntryType.AI,
               timestamp: new Date().toISOString(),
             });
             
             // Update conversation status
-            await conversationService.returnToActiveStatus(conversationId as unknown as ObjectId);
+            await conversationService.returnToActiveStatus(conversationId!);
+
           }
         } catch (error) {
           console.error('Error handling supervisor response:', error);
@@ -106,7 +108,7 @@ export default defineAgent({
       const userMessage = ev.transcript;
 
       // Save user message
-      await conversationService.saveMessage(conversationId as unknown as ObjectId, {
+      await conversationService.saveMessage(conversationId!, {
         text: userMessage,
         type: ConversationEntryType.USER,
         timestamp: new Date().toISOString(),
@@ -117,16 +119,22 @@ export default defineAgent({
       if (knowledgeAnswer) {
         console.log('🎓 Using knowledge base answer for:', userMessage);
         
-        const responseText = `The knowledge base provided an answer to your question. You asked: "${userMessage}". The answer is: "${knowledgeAnswer}".`;
+        const responseText = `The knowledge base provided an answer to your question.  The answer is: "${knowledgeAnswer}".`;
         
         // Send knowledge base answer
-        await session.say(responseText);
+        await session.say(responseText,{
+         allowInterruptions: false
+        });
+
+
 
         // Update conversation status
-        await conversationService.returnToActiveStatus(conversationId as unknown as ObjectId);
+        await conversationService.returnToActiveStatus(conversationId!);
+
+        
         
         // Save AI response
-        await conversationService.saveMessage(conversationId as unknown as ObjectId, {
+        await conversationService.saveMessage(conversationId! , {
           text: responseText,
           type: ConversationEntryType.AI,
           timestamp: new Date().toISOString(),
@@ -144,7 +152,7 @@ export default defineAgent({
       );
       
       if (escalated) {
-        await conversationService.updateStatus(conversationId as unknown as ObjectId, RequestStatus.WAITING_FOR_HELP);
+        await conversationService.updateStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
       }
     });
 
@@ -153,7 +161,7 @@ export default defineAgent({
       const { textContent, role, createdAt } = ev.item;
       if (!textContent) return;
 
-      await conversationService.saveMessage(conversationId as unknown as ObjectId, {
+      await conversationService.saveMessage(conversationId!, {
         text: textContent,
         type: role === 'user' ? ConversationEntryType.USER : ConversationEntryType.AI,
         timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),

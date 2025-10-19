@@ -1,5 +1,5 @@
 import { DataPacket_Kind, RoomServiceClient } from 'livekit-server-sdk';
-import type { INotificationService } from '../../../domain/services/INotificationService.js';
+import type { INotificationService } from '../../domain/services/INotificationService.js';
 
 export class LiveKitNotificationService implements INotificationService {
   private roomService: RoomServiceClient;

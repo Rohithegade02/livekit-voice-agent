@@ -1,9 +1,10 @@
 import type { Db } from "mongodb";
 import { ObjectId } from "mongodb";
-import type { IConversationRepository } from "../../../../domain/repositories/IConversationRepository.js";
-import type { Conversation } from "../../../../domain/entities/Conversation.js";
-import type { ConversationEntry } from "../../../../domain/entities/ConversationEntry.js";
-import { RequestStatus } from "../../../../domain/entities/Enums.js";
+import type { IConversationRepository } from "../../../domain/repositories/IConversationRepository.js";
+import type { Conversation } from "../../../domain/entities/Conversation.js";
+import { RequestStatus } from "../../../domain/entities/Enums.js";
+import type { ConversationEntry } from "../../../domain/entities/ConversationEntry.js";
+
 
 export class ConversationRepository implements IConversationRepository {
   constructor(private db: Db) {}

@@ -1,7 +1,4 @@
 import type { Db } from "mongodb";
-import { HelpRequestRepository } from "./application/infrastructure/database/repositories/HelpRequestRepository.js";
-import { KnowledgeRepository } from "./application/infrastructure/database/repositories/KnowledgeService.js";
-import { LiveKitNotificationService } from "./application/infrastructure/livekit/LiveKitNotificationService.js";
 import { HelpRequestService } from "./application/services/HelpRequestService.js";
 import { KnowledgeService } from "./application/services/KnowledgeService.js";
 import { GetPendingHelpRequestsUseCase } from "./domain/use-cases/GetPendingHelpRequestsUseCase.js";
@@ -9,14 +6,17 @@ import { ManageKnowledgeUseCase } from "./domain/use-cases/ManageKnowledgeUseCas
 import { ResolveHelpRequestUseCase } from "./domain/use-cases/ResolveHelpRequestUseCase.js";
 import { HelpRequestController } from "./presentation/controllers/HelpRequestController.js";
 import { KnowledgeController } from "./presentation/controllers/KnowledgeController.js";
-import { ConversationRepository } from "./application/infrastructure/database/repositories/ConversationRepository.js";
 import { ConversationService } from "./application/services/ConversationService.js";
 import { EscalateToSupervisorUseCase } from "./domain/use-cases/EscalateToSupervisorUseCase.js";
 import { EscalationService } from "./application/services/EscalationService.js";
-import { LiveKitEscalationHandler } from "./application/infrastructure/livekit/LiveKitEscalationHandler.js";
 import { HandleExpiredHelpRequestsUseCase } from "./domain/use-cases/HandleExpiredHelpRequestsUseCase.js";
 import { TimeoutService } from "./application/services/TimeoutService.js";
 import { TimeoutHandler } from "./infrastructure/background/TimeoutHandler.js";
+import { HelpRequestRepository } from "./infrastructure/database/repositories/HelpRequestRepository.js";
+import { KnowledgeRepository } from "./infrastructure/database/repositories/KnowledgeService.js";
+import { ConversationRepository } from "./infrastructure/database/repositories/ConversationRepository.js";
+import { LiveKitNotificationService } from "./infrastructure/livekit/LiveKitNotificationService.js";
+import { LiveKitEscalationHandler } from "./infrastructure/livekit/LiveKitEscalationHandler.js";
 
 export function setupDependencies(db: Db) {
   // Repositories

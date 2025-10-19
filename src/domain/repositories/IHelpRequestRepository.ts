@@ -1,6 +1,5 @@
 import type { HelpRequest } from "../entities/HelpRequest.js";
 import { HelpRequestStatus } from "../entities/Enums.js";
-import type { ObjectId } from "mongodb";
 
 export interface IHelpRequestRepository {
   findPendingRequests(): Promise<HelpRequest[]>;

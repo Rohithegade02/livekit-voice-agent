@@ -1,6 +1,6 @@
 import { ObjectId, type Db } from "mongodb";
-import type { KnowledgeEntry } from "../../../../domain/entities/KnowledgeEntry.js";
-import type { IKnowledgeRepository } from "../../../../domain/repositories/IKnowledgeRepository.js";
+import type { IKnowledgeRepository } from "../../../domain/repositories/IKnowledgeRepository.js";
+import type { KnowledgeEntry } from "../../../domain/entities/KnowledgeEntry.js";
 
 export class KnowledgeRepository implements IKnowledgeRepository {
   constructor(private db: Db) {}

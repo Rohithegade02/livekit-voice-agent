@@ -1,7 +1,8 @@
 import { type Db, ObjectId } from "mongodb";
-import { HelpRequestStatus } from "../../../../domain/entities/Enums.js";
-import type { HelpRequest } from "../../../../domain/entities/HelpRequest.js";
-import type { IHelpRequestRepository } from "../../../../domain/repositories/IHelpRequestRepository.js";
+import type { IHelpRequestRepository } from "../../../domain/repositories/IHelpRequestRepository.js";
+import type { HelpRequest } from "../../../domain/entities/HelpRequest.js";
+import { HelpRequestStatus } from "../../../domain/entities/Enums.js";
+
 
 export class HelpRequestRepository implements IHelpRequestRepository {
   constructor(private db: Db) {}
@@ -46,18 +47,22 @@ export class HelpRequestRepository implements IHelpRequestRepository {
   }
 
   async updateStatus(
-    id: string,
+    id: string ,
     status: HelpRequestStatus,
     response?: string
   ): Promise<void> {
+    console.log(`Updating help request ${id} to status ${status} with response: ${response}`);
     const updateData: any = { status, resolvedAt: new Date() };
-    if (response) updateData.supervisorResponse = response;
+    if (response) {
+      updateData.supervisorResponse = response;
+    }
 
     await this.db.collection<HelpRequest>("help_requests").updateOne(
-      { _id: id },
+      { _id: new ObjectId(id) as any},
       { $set: updateData }
     );
   }
+
    async create(helpRequest: Omit<HelpRequest, '_id'>): Promise<HelpRequest> {
     const result = await this.db.collection<HelpRequest>('help_requests').insertOne(helpRequest);
     console.log(`📩 Supervisor ping: Hey, I need help answering "${helpRequest.question}"`);

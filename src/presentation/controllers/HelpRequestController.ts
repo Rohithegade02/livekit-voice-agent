@@ -16,6 +16,7 @@ export class HelpRequestController {
   async resolveRequest(req: Request, res: Response): Promise<void> {
     try {
       const { helpRequestId, response } = req.body;
+      console.log('Resolving help request:', helpRequestId, response);
       await this.helpRequestService.resolveRequest(helpRequestId, response);
       res.json({ success: true });
     } catch (error) {

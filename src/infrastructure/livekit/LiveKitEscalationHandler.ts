@@ -1,6 +1,5 @@
 import type { JobContext, voice } from "@livekit/agents";
-import type { EscalationService } from "../../services/EscalationService.js";
-import type { ObjectId } from "mongodb";
+import type { EscalationService } from "../../application/services/EscalationService.js";
 
 export class LiveKitEscalationHandler {
   constructor(private escalationService: EscalationService) {}
