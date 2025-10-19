@@ -21,6 +21,9 @@ import { ObjectId } from 'mongodb';
 
 dotenv.config({ path: '.env.local' });
 
+let lastUserMessage = '';
+let lastMessageTime = 0;
+
 export default defineAgent({
   prewarm: async (proc: JobProcess) => {
     proc.userData.vad = await silero.VAD.load();
@@ -107,6 +110,16 @@ export default defineAgent({
 
       const userMessage = ev.transcript;
 
+      const now = Date.now();
+      
+      // 👇 Prevent same message within 2 seconds
+      if (userMessage === lastUserMessage && (now - lastMessageTime) < 2000) {
+        console.log('🔄 Skipping duplicate message:', userMessage);
+        return;
+      }
+      
+      lastUserMessage = userMessage;
+      lastMessageTime = now;
       // Save user message
       await conversationService.saveMessage(conversationId!, {
         text: userMessage,
@@ -161,9 +174,10 @@ export default defineAgent({
       const { textContent, role, createdAt } = ev.item;
       if (!textContent) return;
 
+      if (role === 'user') return; // Already saved
       await conversationService.saveMessage(conversationId!, {
         text: textContent,
-        type: role === 'user' ? ConversationEntryType.USER : ConversationEntryType.AI,
+        type:  ConversationEntryType.AI,
         timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),
       });
     });
