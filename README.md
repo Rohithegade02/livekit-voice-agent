@@ -163,15 +163,12 @@ src/
 ### Environment Variables
 
 ```env
-# MongoDB
 LIVEKIT_API_KEY=
 LIVEKIT_API_SECRET=
 LIVEKIT_URL=
 NEXT_PUBLIC_LIVEKIT_URL=
 MONGODB_URI=
 MONGODB_DB_NAME=
-# Server
-SUPERVISOR_PORT=3001
 ```
 
 ## 🛠️ Development
