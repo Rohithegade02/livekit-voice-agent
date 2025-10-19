@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { getDb } from '../config/db.js';
+import { getDb } from './infrastructure/database/config/db.js';
 import { createHelpRequestRoutes } from './presentation/routes/helpRequestRoutes.js';
 import { createKnowledgeRoutes } from './presentation/routes/knowledgeRoutes.js';
 import { setupDependencies } from './di-container.js';

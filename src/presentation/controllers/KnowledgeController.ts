@@ -13,6 +13,7 @@ export class KnowledgeController {
     }
   }
 
+  // not used currently but can be useful for future features
   async deleteEntry(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;

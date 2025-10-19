@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 import { SALON_SYSTEM_PROMPT } from './data/SALON_PROMPT.js';
 import { fileURLToPath } from 'node:url';
 import { unknownTopics } from './data/UNKNOWN_TOPIC.js';
-import { getDb } from './config/db.js';
+import { getDb } from './src/infrastructure/database/config/db.js';
 import { setupDependencies } from './src/di-container.js';
 import { ConversationEntryType, RequestStatus } from './src/domain/entities/Enums.js';
 import { ObjectId } from 'mongodb';
