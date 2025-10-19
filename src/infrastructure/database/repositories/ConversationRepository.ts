@@ -12,7 +12,7 @@ export class ConversationRepository implements IConversationRepository {
   private get collection() {
     return this.db.collection<Conversation>('conversations');
   }
-
+// Save a message to an active conversation or create a new one
   async saveMessage(conversationId: string, entry: ConversationEntry): Promise<void> {
     const activeSession = await this.collection.findOne({
       conversationId,
@@ -34,7 +34,7 @@ export class ConversationRepository implements IConversationRepository {
       });
     }
   }
-
+// Update the status of a conversation
   async updateStatus(conversationId: string, newStatus: RequestStatus): Promise<void> {
     const updateData: any = { status: newStatus };
     
@@ -48,6 +48,7 @@ export class ConversationRepository implements IConversationRepository {
     );
   }
 
+  // Set the active help request for a conversation (especially when escalation occurs)
   async setActiveHelpRequest(conversationId: string, helpRequestId: string): Promise<void> {
     await this.collection.updateOne(
       { conversationId: conversationId as unknown as string, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
@@ -59,18 +60,18 @@ export class ConversationRepository implements IConversationRepository {
       }
     );
   }
-
+// Find an active conversation by its ID
   async findById(conversationId: string): Promise<Conversation | null> {
     return this.collection.findOne({
       conversationId,
       status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] },
     });
   }
-
+// Find conversations by their status
   async findByStatus(status: RequestStatus): Promise<Conversation[]> {
     return this.collection.find({ status }).sort({ startedAt: -1 }).toArray();
   }
-
+// Mark a conversation as completed
   async completeConversation(conversationId: string): Promise<void> {
     await this.collection.updateOne(
       { conversationId, status: { $in: [RequestStatus.ACTIVE, RequestStatus.WAITING_FOR_HELP] } },
@@ -82,7 +83,7 @@ export class ConversationRepository implements IConversationRepository {
       }
     );
   }
-
+// Return a conversation to active status after help request resolution
   async returnToActiveStatus(conversationId: string): Promise<void> {
     await this.collection.updateOne(
       { conversationId },
@@ -94,7 +95,7 @@ export class ConversationRepository implements IConversationRepository {
       }
     );
   }
-
+// Activate conversation by help request ID
   async activateConversation(helpRequestId: string): Promise<void> {
     await this.collection.updateOne(
       { activeHelpRequestId: helpRequestId },

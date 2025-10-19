@@ -18,7 +18,7 @@ export class HelpRequestRepository implements IHelpRequestRepository {
       _id: doc._id.toString(), // convert ObjectId to string if needed
     };
   }
-
+// Fetch all pending help requests
   async findPendingRequests(): Promise<HelpRequest[]> {
     const docs = await this.db
       .collection("help_requests")
@@ -28,7 +28,7 @@ export class HelpRequestRepository implements IHelpRequestRepository {
 
     return docs.map(this.toHelpRequest);
   }
-
+// Find a help request by its ID
   async findById(id: string): Promise<HelpRequest | null> {
     const doc = await this.db
       .collection("help_requests")
@@ -37,7 +37,8 @@ export class HelpRequestRepository implements IHelpRequestRepository {
     if (!doc) return null;
     return this.toHelpRequest(doc);
   }
-   async findExpiredRequests(timeoutAgo: Date): Promise<HelpRequest[]> {
+// Find help requests that have expired based on a timeout
+  async findExpiredRequests(timeoutAgo: Date): Promise<HelpRequest[]> {
     return this.db.collection<HelpRequest>('help_requests')
       .find({
         status: HelpRequestStatus.PENDING,
@@ -45,7 +46,7 @@ export class HelpRequestRepository implements IHelpRequestRepository {
       })
       .toArray();
   }
-
+// Update the status and optionally the response of a help request
   async updateStatus(
     id: string ,
     status: HelpRequestStatus,
@@ -62,7 +63,7 @@ export class HelpRequestRepository implements IHelpRequestRepository {
       { $set: updateData }
     );
   }
-
+// Create a new help request
    async create(helpRequest: Omit<HelpRequest, '_id'>): Promise<HelpRequest> {
     const result = await this.db.collection<HelpRequest>('help_requests').insertOne(helpRequest);
     console.log(`📩 Supervisor ping: Hey, I need help answering "${helpRequest.question}"`);
