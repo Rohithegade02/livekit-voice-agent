@@ -2,6 +2,12 @@
 
 A clean architecture Node.js backend for a voice AI agent system with supervisor escalation and knowledge base management.
 
+# Tech-Stack used
+
+- MongoDB
+- Nodejs
+- Livekit
+
 ## 🏗️ Architecture Overview
 
 This project follows Clean Architecture principles with clear separation of concerns:
