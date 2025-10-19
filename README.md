@@ -46,6 +46,7 @@ src/
 - `ResolveHelpRequestUseCase.ts`
 - `GetPendingHelpRequestsUseCase.ts`
 - `ManageKnowledgeUseCase.ts`
+- `HandleExpiredRequest.ts`
 
 ### Application Layer (Business Logic)
 
@@ -109,7 +110,6 @@ src/
 
 ### Knowledge Base
 - `GET /api/knowledge` - Get all knowledge entries
-- `DELETE /api/knowledge/:id` - Delete a knowledge entry
 
 ## 🗄️ Database Schema
 
@@ -123,19 +123,36 @@ src/
 ```typescript
 // Help Request
 {
+  _id?: string;
   conversationId: string;
   question: string;
-  status: 'PENDING' | 'RESOLVED' | 'UNRESOLVED';
-  supervisorResponse?: string;
   createdAt: Date;
   resolvedAt?: Date;
+  status: HelpRequestStatus;
+  supervisorResponse?: string;
+  knowledgeBaseEntryId?: string;
+}
+
+
+//Conversation
+ {
+  _id?: ObjectId;          
+  conversationId: string;
+  roomName: string;
+  status: RequestStatus;
+  startedAt: string;
+  endedAt?: string;
+  messages: ConversationEntry[];
+  activeHelpRequestId?: ObjectId | string;
 }
 
 // Knowledge Entry
 {
+  _id?: string;
   question: string;
   answer: string;
   sourceHelpRequestId: string;
+  createdAt: Date;
   usageCount: number;
   lastUsed?: Date;
 }
@@ -147,13 +164,12 @@ src/
 
 ```env
 # MongoDB
-MONGODB_URI=mongodb+srv://...
-
-# LiveKit
-LIVEKIT_API_KEY=your_api_key
-LIVEKIT_API_SECRET=your_api_secret
-LIVEKIT_URL=your_livekit_url
-
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+LIVEKIT_URL=
+NEXT_PUBLIC_LIVEKIT_URL=
+MONGODB_URI=
+MONGODB_DB_NAME=
 # Server
 SUPERVISOR_PORT=3001
 ```
@@ -172,9 +188,7 @@ pnpm install
 # Development
 pnpm run dev:supervisor
 
-# Production
-pnpm run start:supervisor
-```
+
 
 ### Running the Agent
 
@@ -182,8 +196,6 @@ pnpm run start:supervisor
 # Development
 pnpm run dev
 
-# Production
-pnpm run start
 ```
 
 ## 🔄 Workflow
@@ -208,17 +220,6 @@ pnpm run start
 4. Response delivered to user via LiveKit
 5. Conversation status returns to ACTIVE
 
-## 🧪 Testing
-
-The architecture supports easy testing:
-
-```typescript
-// Example unit test
-const mockRepo = {
-  findPendingRequests: jest.fn()
-};
-const useCase = new GetPendingHelpRequestsUseCase(mockRepo);
-```
 
 ## 📈 Monitoring & Logging
 
@@ -237,10 +238,3 @@ Key log events:
 - Multi-language support
 - Advanced timeout handling with retries
 
-## 📄 License
-
-ISC License
-
----
-
-This clean architecture ensures maintainability, testability, and scalability while providing a robust voice AI agent system with human-in-the-loop capabilities.
