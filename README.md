@@ -129,16 +129,22 @@ src/
 ```typescript
 // Help Request
 {
-  _id?: string;
+  _id?: ObjectId;          
   conversationId: string;
-  question: string;
-  createdAt: Date;
-  resolvedAt?: Date;
-  status: HelpRequestStatus;
-  supervisorResponse?: string;
-  knowledgeBaseEntryId?: string;
+  roomName: string;
+  status: RequestStatus;
+  startedAt: string;
+  endedAt?: string;
+  messages: ConversationEntry[];
+  activeHelpRequestId?: ObjectId | string;
 }
 
+//ConversationEntry
+ {
+  text: string;
+  type: ConversationEntryType;
+  timestamp: string;
+}
 
 //Conversation
  {

@@ -1,4 +1,5 @@
 import type { JobContext, voice } from "@livekit/agents";
+import type { ObjectId } from "mongodb";
 import type { EscalationService } from "../../application/services/EscalationService.js";
 
 export class LiveKitEscalationHandler {
@@ -33,6 +34,21 @@ export class LiveKitEscalationHandler {
     }
 
     return false;
+  }
+
+  // NEW METHOD: Create help request without speaking duplicate message
+  async createHelpRequestOnly(text: string, ctx: JobContext): Promise<string> {
+    console.log("🆘 ESCALATION TRIGGERED (silent) for:", text);
+
+    // 1. Create help request in database
+    const conversationId = ctx.room.name;
+    const helpRequestId = await this.escalationService.handleEscalation(conversationId!, text);
+    
+    // 2. Send data to frontend (but don't speak)
+    await this.sendEscalationData(ctx, text, helpRequestId);
+
+    console.log("✅ Help request created without duplicate speech");
+    return helpRequestId;
   }
 
   private async sendEscalationData(ctx: JobContext, text: string, helpRequestId: string): Promise<void> {
