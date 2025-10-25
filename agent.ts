@@ -10,7 +10,7 @@ import * as livekit from '@livekit/agents-plugin-livekit';
 import * as silero from '@livekit/agents-plugin-silero';
 import { BackgroundVoiceCancellation } from '@livekit/noise-cancellation-node';
 import dotenv from 'dotenv';
-import { SALON_SYSTEM_PROMPT } from './data/SALON_PROMPT.js';
+import {  SALON_SYSTEM_PROMPT } from './data/SALON_PROMPT.js';
 import { fileURLToPath } from 'node:url';
 import { unknownTopics } from './data/UNKNOWN_TOPIC.js';
 import { getDb } from './src/infrastructure/database/config/db.js';
@@ -50,7 +50,6 @@ export default defineAgent({
       inputOptions: { noiseCancellation: BackgroundVoiceCancellation() },
     });
 
-    console.log("✅ Session started with STT:", session.stt, "TTS:", session.tts);
 
     // Initialize dependencies
     const db = await getDb();
@@ -104,12 +103,11 @@ export default defineAgent({
       }
     });
 
-    // Listen to user transcriptions
     session.on(voice.AgentSessionEventTypes.UserInputTranscribed, async (ev) => {
       if (!ev.transcript || !ev.isFinal) return;
-
+    
       const userMessage = ev.transcript;
-
+    
       const now = Date.now();
       
       // 👇 Prevent same message within 2 seconds
@@ -120,34 +118,34 @@ export default defineAgent({
       
       lastUserMessage = userMessage;
       lastMessageTime = now;
+      
       // Save user message
       await conversationService.saveMessage(conversationId!, {
         text: userMessage,
         type: ConversationEntryType.USER,
         timestamp: new Date().toISOString(),
       });
-
+    
       // 1. FIRST check knowledge base
       const knowledgeAnswer = await knowledgeService.findAnswer(userMessage);
       if (knowledgeAnswer) {
         console.log('🎓 Using knowledge base answer for:', userMessage);
-        
-        const responseText = `The knowledge base provided an answer to your question.  The answer is: "${knowledgeAnswer}".`;
+
+        // INTERRUPT any automatic responses
+        session.interrupt();
+        const responseText = 'The Knowledge base has provided an answer for your asked question . The response is '+ knowledgeAnswer; // Direct answer
         
         // Send knowledge base answer
-        await session.say(responseText,{
-         allowInterruptions: false
+        await session.say(responseText, {
+          allowInterruptions: false,
+          
         });
-
-
-
+    
         // Update conversation status
         await conversationService.returnToActiveStatus(conversationId!);
-
-        
         
         // Save AI response
-        await conversationService.saveMessage(conversationId! , {
+        await conversationService.saveMessage(conversationId!, {
           text: responseText,
           type: ConversationEntryType.AI,
           timestamp: new Date().toISOString(),
@@ -155,31 +153,90 @@ export default defineAgent({
         
         return; // Stop further processing
       }
-
-      // 2. THEN check for escalation (only if no knowledge base answer)
-      const escalated = await liveKitEscalationHandler.checkForEscalation(
-        userMessage, 
-        session, 
-        ctx, 
-        unknownTopics
-      );
-      
-      if (escalated) {
-        await conversationService.updateStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
-      }
-    });
-
-    // Listen to AI generated messages and save them
-    session.on(voice.AgentSessionEventTypes.ConversationItemAdded, async (ev) => {
-      const { textContent, role, createdAt } = ev.item;
-      if (!textContent) return;
-
-      if (role === 'user') return; // Already saved
-      await conversationService.saveMessage(conversationId!, {
-        text: textContent,
-        type:  ConversationEntryType.AI,
-        timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),
+    
+      // 2. AI DECIDES: Use a promise to capture the AI response
+      let aiResponseText = '';
+      let responseResolve: (value: string) => void;
+      const responsePromise = new Promise<string>((resolve) => {
+        responseResolve = resolve;
       });
+      
+      // Listen for the AI response (THIS WILL HANDLE ALL AI RESPONSES)
+      const onConversationItem = (ev: any) => {
+        const { textContent, role, createdAt } = ev.item;
+        if (role === 'assistant' && textContent) {
+          aiResponseText = textContent;
+          
+          // Save ALL AI responses to conversation
+          conversationService.saveMessage(conversationId!, {
+            text: textContent,
+            type: ConversationEntryType.AI,
+            timestamp: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),
+          }).catch(console.error);
+          
+          responseResolve(textContent);
+          session.off(voice.AgentSessionEventTypes.ConversationItemAdded, onConversationItem);
+        }
+      };
+    
+      session.on(voice.AgentSessionEventTypes.ConversationItemAdded, onConversationItem);
+    
+      try {
+        // Generate the response
+        // await session.generateReply({
+        //   instructions: `Current user question: "${userMessage}" - If this requires human assistance based on your escalation criteria, respond with "ESCALATE:" followed by the reason.`,
+        // });
+    
+        // Wait for the AI response text
+        const responseText = await responsePromise;
+        // Check if AI decided to escalate
+        const shouldEscalate = responseText.includes('ESCALATE:');
+    
+        if (shouldEscalate) {
+          console.log('🤖 AI decided to escalate:', userMessage);
+          
+          // EXTRACT THE CLEAN MESSAGE (remove ESCALATE: prefix)
+          const cleanMessage = responseText.replace(/^ESCALATE:.*?\n/, '').trim();
+          
+          // Update the saved message with clean version
+          await conversationService.saveMessage(conversationId!, {
+            text: cleanMessage,
+            type: ConversationEntryType.AI,
+            timestamp: new Date().toISOString(),
+          });
+          
+          // Trigger escalation WITHOUT speaking again
+          const helpRequestId = await liveKitEscalationHandler.createHelpRequestOnly(
+            userMessage, 
+            ctx
+          );
+          
+          if (helpRequestId) {
+            await conversationService.updateStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+            console.log('✅ Escalation completed without duplicate messages');
+          }
+          
+        } else {
+          // AI handled the response normally
+          console.log('🤖 AI handling response normally');
+          // The response is already saved by the conversation item listener
+        }
+      } catch (error) {
+        console.error('Error in AI response generation:', error);
+        session.off(voice.AgentSessionEventTypes.ConversationItemAdded, onConversationItem);
+        
+        // Fallback: Use semantic detection if AI generation fails
+        const escalated = await liveKitEscalationHandler.checkForEscalation(
+          userMessage, 
+          session, 
+          ctx, 
+          unknownTopics
+        );
+        
+        if (escalated) {
+          await conversationService.updateStatus(conversationId!, RequestStatus.WAITING_FOR_HELP);
+        }
+      }
     });
 
     // Initial AI greeting
